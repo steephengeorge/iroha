@@ -18,6 +18,7 @@
 #include "framework/integration_framework/integration_test_framework.hpp"
 
 #include <memory>
+
 #include "builders/protobuf/block.hpp"
 #include "builders/protobuf/proposal.hpp"
 #include "builders/protobuf/transaction.hpp"
@@ -39,36 +40,8 @@ namespace integration_framework {
   const std::string IntegrationTestFramework::kAdminId = "admin@test";
   const std::string IntegrationTestFramework::kAssetName = "coin";
 
-  IntegrationTestFramework::~IntegrationTestFramework() {
-    pqxx::lazyconnection connection(iroha_instance_->pg_conn_);
-    const auto drop = R"(
-DROP TABLE IF EXISTS account_has_signatory;
-DROP TABLE IF EXISTS account_has_asset;
-DROP TABLE IF EXISTS role_has_permissions;
-DROP TABLE IF EXISTS account_has_roles;
-DROP TABLE IF EXISTS account_has_grantable_permissions;
-DROP TABLE IF EXISTS account;
-DROP TABLE IF EXISTS asset;
-DROP TABLE IF EXISTS domain;
-DROP TABLE IF EXISTS signatory;
-DROP TABLE IF EXISTS peer;
-DROP TABLE IF EXISTS role;
-DROP TABLE IF EXISTS height_by_hash;
-DROP TABLE IF EXISTS height_by_account_set;
-DROP TABLE IF EXISTS index_by_creator_height;
-DROP TABLE IF EXISTS index_by_id_height_asset;
-)";
-
-    pqxx::work txn(connection);
-    txn.exec(drop);
-    txn.commit();
-    connection.disconnect();
-
-    iroha::remove_dir_contents(iroha_instance_->block_store_dir_);
-  }
-
-  IntegrationTestFramework &IntegrationTestFramework::setInitialState(
-      const shared_model::crypto::Keypair &key) {
+  shared_model::proto::Block IntegrationTestFramework::defaultBlock(
+      const shared_model::crypto::Keypair &key) const {
     auto genesis_tx =
         shared_model::proto::TransactionBuilder()
             .creatorAccountId(kAdminId)
@@ -95,14 +68,20 @@ DROP TABLE IF EXISTS index_by_id_height_asset;
             .createdTime(iroha::time::now())
             .build()
             .signAndAddSignature(key);
-    return setInitialState(key, genesis_block);
+    return genesis_block;
+  }
+
+  IntegrationTestFramework &IntegrationTestFramework::setInitialState(
+      const Keypair &keypair) {
+    return setInitialState(keypair,
+                           IntegrationTestFramework::defaultBlock(keypair));
   }
 
   IntegrationTestFramework &IntegrationTestFramework::setInitialState(
       const Keypair &keypair, const shared_model::interface::Block &block) {
     log_->info("init state");
     // peer initialization
-    iroha_instance_->initPipeline(keypair, maximum_block_size_);
+    iroha_instance_->initPipeline(keypair, maximum_proposal_size_);
     log_->info("created pipeline");
     // iroha_instance_->clearLedger();
     // log_->info("cleared ledger");
@@ -152,8 +131,39 @@ DROP TABLE IF EXISTS index_by_id_height_asset;
   }
 
   IntegrationTestFramework &IntegrationTestFramework::sendTx(
+      const shared_model::proto::Transaction &tx,
+      const std::function<void(shared_model::proto::TransactionResponse &)>
+          &validation) {
+    log_->info("send transaction");
+    iroha_instance_->getIrohaInstance()->getCommandService()->Torii(
+        tx.getTransport());
+    // fetch status of transaction
+    shared_model::proto::TransactionResponse status = getTxStatus(tx.hash());
+
+    // check validation function
+    validation(status);
+    return *this;
+  }
+
+  IntegrationTestFramework &IntegrationTestFramework::sendTx(
       const shared_model::proto::Transaction &tx) {
     sendTx(tx, [](const auto &) {});
+    return *this;
+  }
+
+  IntegrationTestFramework &IntegrationTestFramework::sendQuery(
+      const shared_model::proto::Query &qry,
+      const std::function<void(shared_model::proto::QueryResponse &)>
+          &validation) {
+    log_->info("send query");
+
+    iroha::protocol::QueryResponse response;
+    iroha_instance_->getIrohaInstance()->getQueryService()->Find(
+        qry.getTransport(), response);
+    auto query_response =
+        shared_model::proto::QueryResponse(std::move(response));
+
+    validation(query_response);
     return *this;
   }
 
@@ -163,8 +173,29 @@ DROP TABLE IF EXISTS index_by_id_height_asset;
     return *this;
   }
 
+  IntegrationTestFramework &IntegrationTestFramework::checkProposal(
+      const std::function<void(ProposalType &)> &validation) {
+    log_->info("check proposal");
+    // fetch first proposal from proposal queue
+    ProposalType proposal;
+    fetchFromQueue(
+        proposal_queue_, proposal, proposal_waiting, "missed proposal");
+    validation(proposal);
+    return *this;
+  }
+
   IntegrationTestFramework &IntegrationTestFramework::skipProposal() {
     checkProposal([](const auto &) {});
+    return *this;
+  }
+
+  IntegrationTestFramework &IntegrationTestFramework::checkBlock(
+      const std::function<void(BlockType &)> &validation) {
+    // fetch first from block queue
+    log_->info("check block");
+    BlockType block;
+    fetchFromQueue(block_queue_, block, block_waiting, "missed block");
+    validation(block);
     return *this;
   }
 
@@ -176,5 +207,17 @@ DROP TABLE IF EXISTS index_by_id_height_asset;
   void IntegrationTestFramework::done() {
     log_->info("done");
     iroha_instance_->instance_->storage->dropStorage();
+  }
+
+  IntegrationTestFramework::~IntegrationTestFramework() {
+    if (deleter_) {
+      deleter_(this);
+    } else {
+      done();
+    }
+    // the code below should be executed anyway in order to prevent app hang
+    if (iroha_instance_ && iroha_instance_->instance_) {
+      iroha_instance_->instance_->terminate();
+    }
   }
 }  // namespace integration_framework
