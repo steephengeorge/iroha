@@ -19,7 +19,9 @@
 #define IROHA_YAC_MOCKS_HPP
 
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
+#include "builders/default_builders.hpp"
 #include "builders/protobuf/common_objects/proto_peer_builder.hpp"
 #include "common/byteutils.hpp"
 #include "consensus/yac/cluster_order.hpp"
@@ -32,6 +34,7 @@
 #include "consensus/yac/yac_gate.hpp"
 #include "consensus/yac/yac_hash_provider.hpp"
 #include "consensus/yac/yac_peer_orderer.hpp"
+#include "cryptography/crypto_provider/crypto_defaults.hpp"
 #include "interfaces/iroha_internal/block.hpp"
 
 namespace iroha {
@@ -48,13 +51,35 @@ namespace iroha {
 
         return clone(ptr);
       }
+      std::shared_ptr<shared_model::interface::Signature> create_sig(
+          const std::string &pub_key) {
+        std::shared_ptr<shared_model::interface::Signature> signature;
+
+        auto tmp =
+            shared_model::crypto::DefaultCryptoAlgorithmType::generateKeypair()
+                .publicKey();
+        std::string key(tmp.blob().size(), 0);
+        std::copy(pub_key.begin(), pub_key.end(), key.begin());
+
+        shared_model::builder::DefaultSignatureBuilder()
+            .publicKey(shared_model::crypto::PublicKey(key))
+            .signedData(shared_model::crypto::Signed(""))
+            .build()
+            .match(
+                [&](iroha::expected::Value<
+                    std::shared_ptr<shared_model::interface::Signature>> &sig) {
+                  signature = sig.value;
+                },
+                [](iroha::expected::Error<std::shared_ptr<std::string>> &err) {
+                  std::cout << *err.error << std::endl;
+                });
+        return signature;
+      }
 
       VoteMessage create_vote(YacHash hash, std::string pub_key) {
         VoteMessage vote;
         vote.hash = hash;
-        // TODO: 19.01.2019 kamil substitute with function, IR-813
-        std::copy(
-            pub_key.begin(), pub_key.end(), vote.signature.pubkey.begin());
+        vote.signature = create_sig(pub_key);
         return vote;
       }
 
@@ -67,6 +92,7 @@ namespace iroha {
         VoteMessage getVote(YacHash hash) override {
           VoteMessage vote;
           vote.hash = hash;
+          vote.signature = create_sig("");
           return vote;
         }
 

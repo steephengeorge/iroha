@@ -103,9 +103,7 @@ namespace iroha {
                           std::shared_ptr<shared_model::interface::Block>>(
                           [this, model_hash, vote](auto subscriber) {
                             auto block = block_loader_->retrieveBlock(
-                                shared_model::crypto::PublicKey(
-                                    {vote.signature.pubkey.begin(),
-                                     vote.signature.pubkey.end()}),
+                                vote.signature->publicKey(),
                                 shared_model::crypto::Hash(model_hash));
                             // if load is successful
                             if (block) {

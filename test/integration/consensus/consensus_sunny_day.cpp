@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
+#include <ed25519/ed25519.h>
 #include <grpc++/grpc++.h>
+
 #include "consensus/yac/impl/timer_impl.hpp"
 #include "consensus/yac/storage/yac_proposal_storage.hpp"
 #include "consensus/yac/transport/impl/network_impl.hpp"
+#include "cryptography/crypto_provider/crypto_defaults.hpp"
 #include "framework/test_subscriber.hpp"
 #include "module/irohad/consensus/yac/yac_mocks.hpp"
 
@@ -36,17 +39,32 @@ auto mk_local_peer(uint64_t num) {
 class FixedCryptoProvider : public MockYacCryptoProvider {
  public:
   explicit FixedCryptoProvider(const std::string &public_key) {
-    pubkey.fill(0);
-    std::copy(public_key.begin(), public_key.end(), pubkey.begin());
+    auto tmp =
+        shared_model::crypto::DefaultCryptoAlgorithmType::generateKeypair()
+            .publicKey();
+    std::string key(tmp.blob().size(), 0);
+    std::copy(public_key.begin(), public_key.end(), key.begin());
+    pubkey = clone(shared_model::crypto::PublicKey(key));
   }
 
   VoteMessage getVote(YacHash hash) override {
     auto vote = MockYacCryptoProvider::getVote(hash);
-    vote.signature.pubkey = pubkey;
+    shared_model::builder::DefaultSignatureBuilder()
+        .publicKey(shared_model::crypto::PublicKey(*pubkey))
+        .signedData(shared_model::crypto::Signed(""))
+        .build()
+        .match(
+            [&](iroha::expected::Value<
+                std::shared_ptr<shared_model::interface::Signature>> &sig) {
+              vote.signature = sig.value;
+            },
+            [](iroha::expected::Error<std::shared_ptr<std::string>> &err) {
+              std::cout << *err.error << std::endl;
+            });
     return vote;
   }
 
-  decltype(VoteMessage().signature.pubkey) pubkey;
+  std::unique_ptr<shared_model::crypto::PublicKey> pubkey;
 };
 
 class ConsensusSunnyDayTest : public ::testing::Test {

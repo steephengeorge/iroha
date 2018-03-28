@@ -63,13 +63,11 @@ class YacGateTest : public ::testing::Test {
     expected_block = clone(tmp);
     const auto &wrapped_sig = *(expected_block->signatures().begin());
     const auto &signature = *wrapped_sig;
-    // TODO: 24/04/2018 x3medima17 remove makeOldModel in next PR
-    const auto old_signature =
-        *std::unique_ptr<iroha::model::Signature>(signature.makeOldModel());
+
 
     expected_hash.block_signature = clone(signature);
     message.hash = expected_hash;
-    message.signature = old_signature;
+    message.signature = clone(signature);
     commit_message = CommitMessage({message});
     expected_commit = rxcpp::observable<>::just(commit_message);
 

@@ -21,7 +21,13 @@
 #include <vector>
 
 #include "consensus/yac/yac_hash_provider.hpp"  // for YacHash
-#include "model/signature.hpp"                  // for model::Signature
+#include "interfaces/common_objects/signature.hpp"
+#include "model/signature.hpp"  // for model::Signature
+namespace shared_model {
+  namespace interface {
+    class Signature;
+  }
+}  // namespace shared_model
 
 namespace iroha {
   namespace consensus {
@@ -32,10 +38,10 @@ namespace iroha {
        */
       struct VoteMessage {
         YacHash hash;
-        model::Signature signature;
+        std::shared_ptr<shared_model::interface::Signature> signature;
 
         bool operator==(const VoteMessage &rhs) const {
-          return hash == rhs.hash and signature == rhs.signature;
+          return hash == rhs.hash and signature->operator==(*rhs.signature);
         }
 
         bool operator!=(const VoteMessage &rhs) const {

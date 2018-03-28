@@ -17,12 +17,20 @@
 
 #include "consensus/yac/impl/yac_crypto_provider_impl.hpp"
 #include "consensus/yac/transport/yac_pb_converters.hpp"
-#include "cryptography/ed25519_sha3_impl/internal/ed25519_impl.hpp"
-#include "cryptography/ed25519_sha3_impl/internal/sha3_hash.hpp"
+#include "cryptography/crypto_provider/crypto_signer.hpp"
+#include "cryptography/crypto_provider/crypto_verifier.hpp"
 
 namespace iroha {
   namespace consensus {
     namespace yac {
+      std::shared_ptr<shared_model::interface::Signature> createEmptySig() {
+        auto sig = shared_model::proto::SignatureBuilder()
+                       .publicKey(shared_model::crypto::PublicKey(""))
+                       .signedData(shared_model::crypto::Signed(""))
+                       .build();
+        return clone(sig);
+      }
+
       CryptoProviderImpl::CryptoProviderImpl(const keypair_t &keypair)
           : keypair_(keypair) {}
 
@@ -41,25 +49,40 @@ namespace iroha {
       }
 
       bool CryptoProviderImpl::verify(VoteMessage msg) {
-        return iroha::verify(
-            iroha::sha3_256(
-                PbConverters::serializeVote(msg).hash().SerializeAsString())
-                .to_string(),
-            msg.signature.pubkey,
-            msg.signature.signature);
+        auto serialized =
+            PbConverters::serializeVote(msg).hash().SerializeAsString();
+        auto blob = shared_model::crypto::Blob(serialized);
+
+        return shared_model::crypto::CryptoVerifier<>::verify(
+            msg.signature->signedData(), blob, msg.signature->publicKey());
       }
 
       VoteMessage CryptoProviderImpl::getVote(YacHash hash) {
         VoteMessage vote;
         vote.hash = hash;
-        auto signature = iroha::sign(
-            iroha::sha3_256(
-                PbConverters::serializeVote(vote).hash().SerializeAsString())
-                .to_string(),
-            keypair_.pubkey,
-            keypair_.privkey);
-        vote.signature.signature = signature;
-        vote.signature.pubkey = keypair_.pubkey;
+        vote.signature = createEmptySig();
+        auto serialized =
+            PbConverters::serializeVote(vote).hash().SerializeAsString();
+        auto blob = shared_model::crypto::Blob(serialized);
+        auto pubkey =
+            shared_model::crypto::PublicKey(keypair_.pubkey.to_string());
+        auto privkey =
+            shared_model::crypto::PrivateKey(keypair_.privkey.to_string());
+        auto signature = shared_model::crypto::CryptoSigner<>::sign(
+            blob, shared_model::crypto::Keypair(pubkey, privkey));
+
+        shared_model::builder::DefaultSignatureBuilder()
+            .publicKey(pubkey)
+            .signedData(signature)
+            .build()
+            .match(
+                [&](iroha::expected::Value<
+                    std::shared_ptr<shared_model::interface::Signature>> &sig) {
+                  vote.signature = sig.value;
+                },
+                [](iroha::expected::Error<std::shared_ptr<std::string>> &err) {
+                  std::cout << err.error << std::endl;
+                });
         return vote;
       }
 
