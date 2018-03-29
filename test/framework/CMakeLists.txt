@@ -34,7 +34,7 @@ add_library(integration_framework
     )
 target_link_libraries(integration_framework
     application
-    raw_block_insertion
+    raw_block_loader
     keys_manager
     model_generators
     pb_model_converters
