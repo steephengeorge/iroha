@@ -160,7 +160,7 @@ TEST_F(ConsensusSunnyDayTest, SunnyDayTest) {
   std::this_thread::sleep_for(std::chrono::milliseconds(delay_before));
 
   YacHash my_hash("proposal_hash", "block_hash");
-
+  my_hash.block_signature = create_sig("");
   auto order = ClusterOrdering::create(default_peers);
   ASSERT_TRUE(order);
 
