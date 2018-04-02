@@ -114,7 +114,7 @@ namespace iroha {
     std::function<void(pqxx::result &result)> PostgresBlockQuery::callback(
         const rxcpp::subscriber<wTransaction> &subscriber, uint64_t block_id) {
       return [this, &subscriber, block_id](pqxx::result &result) {
-        auto block = block_store_.get(block_id) | [this](const auto &bytes) {
+        auto block = block_store_.get(block_id) | [](const auto &bytes) {
           return shared_model::converters::protobuf::jsonToModel<
               shared_model::proto::Block>(bytesToString(bytes));
         };
@@ -124,7 +124,7 @@ namespace iroha {
         }
 
         boost::for_each(
-            result | boost::adaptors::transformed([&block](const auto &x) {
+            result | boost::adaptors::transformed([](const auto &x) {
               return x.at("index").template as<size_t>();
             }),
             [&](const auto &x) {
@@ -202,7 +202,7 @@ namespace iroha {
         const shared_model::crypto::Hash &hash) {
       auto block = getBlockId(hash) | [this](const auto &block_id) {
         return block_store_.get(block_id);
-      } | [this](const auto &bytes) {
+      } | [](const auto &bytes) {
         return shared_model::converters::protobuf::jsonToModel<
             shared_model::proto::Block>(bytesToString(bytes));
       };
