@@ -1,5 +1,15 @@
 #!/usr/bin/env groovy
 
+def remoteFilesDiffer(f1, f2) {
+  sh "curl -L -o /tmp/${env.GIT_COMMIT}/f1 --create-dirs ${f1}"
+  sh "curl -L -o /tmp/${env.GIT_COMMIT}/f2 ${f2}"
+  diffExitCode = sh(script: "diff -q /tmp/${env.GIT_COMMIT}/f1 /tmp/${env.GIT_COMMIT}/f2", returnStatus: true)
+  if (diffExitCode == 0) {
+    return false
+  }
+  return true
+}
+
 def doDebugBuild(coverageEnabled=false) {
   def parallelism = params.PARALLELISM
   // params are always null unless job is started
@@ -21,19 +31,39 @@ def doDebugBuild(coverageEnabled=false) {
     + " --network=${env.IROHA_NETWORK}")
 
   def platform = sh(script: 'uname -m', returnStdout: true).trim()
-  sh "curl -L -o /tmp/${env.GIT_COMMIT}/Dockerfile --create-dirs https://raw.githubusercontent.com/hyperledger/iroha/${env.GIT_COMMIT}/docker/develop/${platform}/Dockerfile"
-  // pull docker image in case we don't have one
-  // speeds up consequent image builds as we simply tag them
-  sh "docker pull ${DOCKER_BASE_IMAGE_DEVELOP}"
-  if (env.BRANCH_NAME == 'develop') {
-    iC = docker.build("hyperledger/iroha:${GIT_COMMIT}-${BUILD_NUMBER}", "--build-arg PARALLELISM=${parallelism} -f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT}")
-    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-      iC.push("${platform}-develop")
+  def commit = sh(script: "echo ${BRANCH_NAME} | md5sum | cut -c 1-8", returnStdout: true).trim()
+
+  if (remoteFilesDiffer("https://raw.githubusercontent.com/hyperledger/iroha/${env.GIT_COMMIT}/docker/develop/${platform}/Dockerfile", "https://raw.githubusercontent.com/hyperledger/iroha/${env.GIT_PREVIOUS_COMMIT}/docker/develop/${platform}/Dockerfile")) {
+    // develop branch Docker image has been modified
+    if (BRANCH_NAME == 'develop') {
+      iC = docker.build("hyperledger/iroha:${commit}", "--build-arg PARALLELISM=${parallelism} -f /tmp/${env.GIT_COMMIT}/f1 /tmp/${env.GIT_COMMIT}")
+      docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
+        iC.push("${platform}-develop")
+      }
+    }
+    // build Docker image for current branch 
+    else {
+      iC = docker.build("hyperledger/iroha:${commit}", "--build-arg PARALLELISM=${parallelism} -f /tmp/${env.GIT_COMMIT}/f1 /tmp/${env.GIT_COMMIT}")
     }
   }
   else {
-    iC = docker.build("hyperledger/iroha-workflow:${GIT_COMMIT}-${BUILD_NUMBER}", "-f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT} --build-arg PARALLELISM=${parallelism}")
+    // reuse develop branch Docker image
+    if (BRANCH_NAME == 'develop') {
+      iC = docker.image("hyperledger/iroha:${platform}-develop")
+      iC.pull()
+    }
+    else {
+      // first commit in this branch or Dockerfile modified
+      if (remoteFilesDiffer("https://raw.githubusercontent.com/hyperledger/iroha/${env.GIT_COMMIT}/docker/develop/${platform}/Dockerfile", "https://raw.githubusercontent.com/hyperledger/iroha/develop/docker/develop/${platform}/Dockerfile")) {
+        iC = docker.build("hyperledger/iroha:${commit}", "--build-arg PARALLELISM=${parallelism} -f /tmp/${env.GIT_COMMIT}/f1 /tmp/${env.GIT_COMMIT}")
+      }
+      // reuse develop branch Docker image
+      else {
+        iC = docker.image("hyperledger/iroha:${platform}-develop")
+      }
+    }
   }
+
   iC.inside(""
     + " -e IROHA_POSTGRES_HOST=${env.IROHA_POSTGRES_HOST}"
     + " -e IROHA_POSTGRES_PORT=${env.IROHA_POSTGRES_PORT}"
@@ -103,4 +133,5 @@ def doDebugBuild(coverageEnabled=false) {
     }
   }
 }
+
 return this
