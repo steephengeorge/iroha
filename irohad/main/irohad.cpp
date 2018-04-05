@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
                 std::chrono::milliseconds(config[mbr::ProposalDelay].GetUint()),
                 std::chrono::milliseconds(config[mbr::VoteDelay].GetUint()),
                 std::chrono::milliseconds(config[mbr::LoadDelay].GetUint()),
-                *std::unique_ptr<iroha::keypair_t>(keypair->makeOldModel()));
+                *keypair);
 
   // Check if iroha daemon storage was successfully initialized
   if (not irohad.storage) {
