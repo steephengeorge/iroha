@@ -62,9 +62,8 @@ namespace integration_framework {
      */
     explicit IntegrationTestFramework(
         size_t maximum_proposal_size = 10,
-        const std::function<void(IntegrationTestFramework *)> &deleter =
-            nullptr)
-        : maximum_proposal_size_(maximum_proposal_size), deleter_(deleter) {}
+        std::function<void(IntegrationTestFramework &)> deleter =
+            [](IntegrationTestFramework &itf) { itf.done(); });
 
     ~IntegrationTestFramework();
 
@@ -73,8 +72,8 @@ namespace integration_framework {
     * @param key - signing key
     * @return signed genesis block
     */
-    virtual shared_model::proto::Block defaultBlock(
-        const shared_model::crypto::Keypair &key) const;
+    static shared_model::proto::Block defaultBlock(
+        const shared_model::crypto::Keypair &key);
 
     /**
      * Initialize Iroha instance with default genesis block and provided signing
@@ -105,8 +104,8 @@ namespace integration_framework {
      */
     IntegrationTestFramework &sendTx(
         const shared_model::proto::Transaction &tx,
-        const std::function<void(shared_model::proto::TransactionResponse &)>
-            &validation);
+        std::function<void(shared_model::proto::TransactionResponse &)>
+            validation);
 
     /**
      * Send transaction to Iroha without status validation
@@ -133,8 +132,7 @@ namespace integration_framework {
      */
     IntegrationTestFramework &sendQuery(
         const shared_model::proto::Query &qry,
-        const std::function<void(shared_model::proto::QueryResponse &)>
-            &validation);
+        std::function<void(shared_model::proto::QueryResponse &)> validation);
 
     /**
      * Send query to Iroha without response validation
@@ -150,7 +148,7 @@ namespace integration_framework {
      * @return this
      */
     IntegrationTestFramework &checkProposal(
-        const std::function<void(ProposalType &)> &validation);
+        std::function<void(ProposalType &)> validation);
 
     /**
      * Request next proposal from queue and skip it
@@ -165,7 +163,7 @@ namespace integration_framework {
      * @return this
      */
     IntegrationTestFramework &checkBlock(
-        const std::function<void(BlockType &)> &validation);
+        std::function<void(BlockType &)> validation);
 
     /**
      * Request next block from queue and skip it
@@ -222,7 +220,7 @@ namespace integration_framework {
     logger::Logger log_ = logger::log("IntegrationTestFramework");
     std::mutex queue_mu;
     std::condition_variable queue_cond;
-    std::function<void(IntegrationTestFramework *)> deleter_;
+    std::function<void(IntegrationTestFramework &)> deleter_;
   };
 
   template <typename Queue, typename ObjectType, typename WaitTime>

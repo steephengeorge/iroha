@@ -40,8 +40,22 @@ namespace integration_framework {
   const std::string IntegrationTestFramework::kAdminId = "admin@test";
   const std::string IntegrationTestFramework::kAssetName = "coin";
 
+  IntegrationTestFramework::IntegrationTestFramework(
+      size_t maximum_proposal_size,
+      std::function<void(integration_framework::IntegrationTestFramework &)>
+          deleter)
+      : maximum_proposal_size_(maximum_proposal_size), deleter_(deleter) {}
+
+  IntegrationTestFramework::~IntegrationTestFramework() {
+    deleter_(*this);
+    // the code below should be executed anyway in order to prevent app hang
+    if (iroha_instance_ and iroha_instance_->instance_) {
+      iroha_instance_->instance_->terminate();
+    }
+  }
+
   shared_model::proto::Block IntegrationTestFramework::defaultBlock(
-      const shared_model::crypto::Keypair &key) const {
+      const shared_model::crypto::Keypair &key) {
     auto genesis_tx =
         shared_model::proto::TransactionBuilder()
             .creatorAccountId(kAdminId)
@@ -50,8 +64,8 @@ namespace integration_framework {
             .addPeer("0.0.0.0:50541", key.publicKey())
             .createRole(
                 kDefaultRole,
-                // TODO (@l4l) IR-874 create more confort way for
-                // permssion-dependent proto building
+                // TODO (@l4l) IR-874 create more comfort way for
+                // permission-dependent proto building
                 std::vector<std::string>{iroha::model::role_perm_group.begin(),
                                          iroha::model::role_perm_group.end()})
             .createDomain(kDefaultDomain, kDefaultRole)
@@ -132,8 +146,8 @@ namespace integration_framework {
 
   IntegrationTestFramework &IntegrationTestFramework::sendTx(
       const shared_model::proto::Transaction &tx,
-      const std::function<void(shared_model::proto::TransactionResponse &)>
-          &validation) {
+      std::function<void(shared_model::proto::TransactionResponse &)>
+          validation) {
     log_->info("send transaction");
     iroha_instance_->getIrohaInstance()->getCommandService()->Torii(
         tx.getTransport());
@@ -153,8 +167,7 @@ namespace integration_framework {
 
   IntegrationTestFramework &IntegrationTestFramework::sendQuery(
       const shared_model::proto::Query &qry,
-      const std::function<void(shared_model::proto::QueryResponse &)>
-          &validation) {
+      std::function<void(shared_model::proto::QueryResponse &)> validation) {
     log_->info("send query");
 
     iroha::protocol::QueryResponse response;
@@ -174,7 +187,7 @@ namespace integration_framework {
   }
 
   IntegrationTestFramework &IntegrationTestFramework::checkProposal(
-      const std::function<void(ProposalType &)> &validation) {
+      std::function<void(ProposalType &)> validation) {
     log_->info("check proposal");
     // fetch first proposal from proposal queue
     ProposalType proposal;
@@ -190,7 +203,7 @@ namespace integration_framework {
   }
 
   IntegrationTestFramework &IntegrationTestFramework::checkBlock(
-      const std::function<void(BlockType &)> &validation) {
+      std::function<void(BlockType &)> validation) {
     // fetch first from block queue
     log_->info("check block");
     BlockType block;
@@ -209,15 +222,4 @@ namespace integration_framework {
     iroha_instance_->instance_->storage->dropStorage();
   }
 
-  IntegrationTestFramework::~IntegrationTestFramework() {
-    if (deleter_) {
-      deleter_(this);
-    } else {
-      done();
-    }
-    // the code below should be executed anyway in order to prevent app hang
-    if (iroha_instance_ && iroha_instance_->instance_) {
-      iroha_instance_->instance_->terminate();
-    }
-  }
 }  // namespace integration_framework

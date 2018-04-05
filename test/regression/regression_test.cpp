@@ -17,15 +17,13 @@
 
 #include <gtest/gtest.h>
 #include "builders/protobuf/transaction.hpp"
-#include "cryptography/ed25519_sha3_impl/internal/ed25519_impl.hpp"
+#include "cryptography/crypto_provider/crypto_defaults.hpp"
 #include "framework/integration_framework/integration_test_framework.hpp"
 
 constexpr auto kUser = "user@test";
 constexpr auto kAsset = "asset#domain";
-const auto kAdminOldKeypair = iroha::create_keypair();
-const shared_model::crypto::Keypair kAdminKeypair(
-    shared_model::crypto::PublicKey(kAdminOldKeypair.pubkey.to_string()),
-    shared_model::crypto::PrivateKey(kAdminOldKeypair.privkey.to_string()));
+const auto kAdminKeypair =
+    shared_model::crypto::DefaultCryptoAlgorithmType::generateKeypair();
 
 /**
  * @given ITF instance with Iroha
@@ -57,8 +55,7 @@ TEST(RegressionTest, SequentialInitialization) {
     ASSERT_EQ(block->transactions().size(), 0);
   };
   {
-    integration_framework::IntegrationTestFramework(
-        10, [](integration_framework::IntegrationTestFramework *) {})
+    integration_framework::IntegrationTestFramework(10, [](auto &) {})
         .setInitialState(kAdminKeypair)
         .sendTx(tx, checkStatelessValid)
         .skipProposal()
