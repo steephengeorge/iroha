@@ -52,7 +52,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'Iroha'
 documentation = u'Iroha Documentation'
-description = u'Distributed ledger technology platworm, written in C++'
+description = u'Distributed ledger technology platform, written in C++'
 copyright = u'2018 Soramitsu Co., Ltd.'
 author = u'Nikolay Yushkevich at Soramitsu Co., Ltd.'
 
