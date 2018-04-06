@@ -39,12 +39,12 @@ namespace iroha {
           delay_milliseconds_(delay_milliseconds),
           transport_(transport),
           persistent_state_(persistent_state),
-          is_finished(false) {
+          is_finished_(false) {
       updateTimer();
       log_ = logger::log("OrderingServiceImpl");
 
       // restore state of ordering service from persistent storage
-      proposal_height = persistent_state_->loadProposalHeight().value();
+      proposal_height_ = persistent_state_->loadProposalHeight().value();
     }
 
     void OrderingServiceImpl::onTransaction(
@@ -53,7 +53,7 @@ namespace iroha {
       log_->info("Queue size is {}", queue_.unsafe_size());
 
       if (queue_.unsafe_size() >= max_size_) {
-        handle.unsubscribe();
+        handle_.unsubscribe();
         updateTimer();
       }
     }
@@ -62,7 +62,7 @@ namespace iroha {
       // TODO 05/03/2018 andrei IR-1046 Server-side shared model object
       // factories with move semantics
       iroha::protocol::Proposal proto_proposal;
-      proto_proposal.set_height(proposal_height++);
+      proto_proposal.set_height(proposal_height_++);
       proto_proposal.set_created_time(iroha::time::now());
       log_->info("Start proposal generation");
       for (std::shared_ptr<shared_model::interface::Transaction> tx;
@@ -78,10 +78,10 @@ namespace iroha {
 
       // Save proposal height to the persistent storage.
       // In case of restart it reloads state.
-      if (persistent_state_->saveProposalHeight(proposal_height)) {
+      if (persistent_state_->saveProposalHeight(proposal_height_)) {
         publishProposal(std::move(proposal));
       } else {
-        // TODO(@l4l) 23/03/18: publish proposal independant of psql status
+        // TODO(@l4l) 23/03/18: publish proposal independent of psql status
         // IR-1162
         log_->warn(
             "Proposal height cannot be saved. Skipping proposal publish");
@@ -104,23 +104,23 @@ namespace iroha {
     }
 
     void OrderingServiceImpl::updateTimer() {
-      std::lock_guard<std::mutex> lock(m);
-      if (is_finished) {
+      std::lock_guard<std::mutex> lock(m_);
+      if (is_finished_) {
         return;
       }
       if (not queue_.empty()) {
         this->generateProposal();
       }
-      timer = rxcpp::observable<>::timer(
+      timer_ = rxcpp::observable<>::timer(
           std::chrono::milliseconds(delay_milliseconds_));
-      handle = timer.subscribe_on(rxcpp::observe_on_new_thread())
+      handle_ = timer_.subscribe_on(rxcpp::observe_on_new_thread())
                    .subscribe([this](auto) { this->updateTimer(); });
     }
 
     OrderingServiceImpl::~OrderingServiceImpl() {
-      std::lock_guard<std::mutex> lock(m);
-      is_finished = true;
-      handle.unsubscribe();
+      std::lock_guard<std::mutex> lock(m_);
+      is_finished_ = true;
+      handle_.unsubscribe();
     }
   }  // namespace ordering
 }  // namespace iroha

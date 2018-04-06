@@ -91,8 +91,8 @@ namespace iroha {
        */
       void updateTimer();
 
-      rxcpp::observable<long> timer;
-      rxcpp::composite_subscription handle;
+      rxcpp::observable<long> timer_;
+      rxcpp::composite_subscription handle_;
       std::shared_ptr<ametsuchi::PeerQuery> wsv_;
 
       tbb::concurrent_queue<
@@ -122,17 +122,17 @@ namespace iroha {
        * Proposal counter of expected proposal. Should be number of blocks in
        * the ledger + 1.
        */
-      size_t proposal_height;
+      size_t proposal_height_;
 
       /**
        * Mutex for proper quit handling
        */
-      std::mutex m;
+      std::mutex m_;
 
       /**
        * Set after destruction
        */
-      bool is_finished;
+      bool is_finished_;
 
       logger::Logger log_;
     };
