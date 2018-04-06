@@ -59,6 +59,7 @@ namespace iroha {
     }
 
     void OrderingServiceImpl::generateProposal() {
+      log_->warn("generateProposal called");
       // TODO 05/03/2018 andrei IR-1046 Server-side shared model object
       // factories with move semantics
       iroha::protocol::Proposal proto_proposal;
@@ -83,8 +84,8 @@ namespace iroha {
       } else {
         // TODO(@l4l) 23/03/18: publish proposal independent of psql status
         // IR-1162
-        log_->warn(
-            "Proposal height cannot be saved. Skipping proposal publish");
+//        log_->warn(
+//            "Proposal height cannot be saved. Skipping proposal publish");
       }
     }
 
@@ -104,6 +105,7 @@ namespace iroha {
     }
 
     void OrderingServiceImpl::updateTimer() {
+      //log_->warn("updateTimer called");
       std::lock_guard<std::mutex> lock(m_);
       if (is_finished_) {
         return;
