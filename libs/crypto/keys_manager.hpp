@@ -29,8 +29,6 @@ namespace shared_model {
 }
 
 namespace iroha {
-  struct keypair_t;
-
   /**
    * Interface provides facilities to create and store keypair on disk.
    */

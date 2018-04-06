@@ -21,7 +21,6 @@
 #include "consensus/yac/impl/yac_hash_provider_impl.hpp"
 #include "consensus/yac/messages.hpp"
 #include "cryptography/crypto_provider/crypto_defaults.hpp"
-#include "cryptography/ed25519_sha3_impl/internal/ed25519_impl.hpp"
 
 const auto pubkey = std::string('0', 32);
 const auto signed_data = std::string('1', 32);
