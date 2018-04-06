@@ -19,6 +19,7 @@
 #include "builders/protobuf/transaction.hpp"
 #include "cryptography/crypto_provider/crypto_defaults.hpp"
 #include "framework/integration_framework/integration_test_framework.hpp"
+#include "interfaces/utils/specified_visitor.hpp"
 
 constexpr auto kUser = "user@test";
 constexpr auto kAsset = "asset#domain";
@@ -42,11 +43,10 @@ TEST(RegressionTest, SequentialInitialization) {
                         generateKeypair());
 
   auto checkStatelessValid = [](auto &status) {
-    ASSERT_NO_THROW(
-        boost::get<shared_model::detail::
-                       PolymorphicWrapper<shared_model::interface::
-                                              StatelessValidTxResponse>>(
-            status.get()));
+    ASSERT_TRUE(boost::apply_visitor(
+        shared_model::interface::SpecifiedVisitor<shared_model::interface::
+                                        StatelessValidTxResponse>(),
+        status.get()));
   };
   auto checkProposal = [](auto &proposal) {
     ASSERT_EQ(proposal->transactions().size(), 1);

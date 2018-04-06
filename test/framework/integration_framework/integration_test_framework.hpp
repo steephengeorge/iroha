@@ -28,19 +28,22 @@
 #include <vector>
 
 #include <tbb/concurrent_queue.h>
-#include "backend/protobuf/block.hpp"
-#include "backend/protobuf/proposal.hpp"
-#include "backend/protobuf/queries/proto_query.hpp"
-#include "backend/protobuf/query_responses/proto_query_response.hpp"
-#include "backend/protobuf/transaction.hpp"
-#include "backend/protobuf/transaction_responses/proto_tx_response.hpp"
-#include "crypto/keys_manager_impl.hpp"
-#include "cryptography/blob.hpp"
-#include "cryptography/crypto_provider/crypto_defaults.hpp"
-#include "cryptography/keypair.hpp"
 #include "framework/integration_framework/iroha_instance.hpp"
 #include "framework/integration_framework/test_irohad.hpp"
 #include "logger/logger.hpp"
+
+namespace shared_model {
+  namespace crypto {
+    class Keypair;
+  }
+  namespace interface {
+    class Block;
+    class Proposal;
+  }
+  namespace proto {
+    class Block;
+  }
+}
 
 namespace integration_framework {
 
@@ -104,7 +107,7 @@ namespace integration_framework {
      */
     IntegrationTestFramework &sendTx(
         const shared_model::proto::Transaction &tx,
-        std::function<void(shared_model::proto::TransactionResponse &)>
+        std::function<void(const shared_model::proto::TransactionResponse &)>
             validation);
 
     /**
@@ -132,7 +135,8 @@ namespace integration_framework {
      */
     IntegrationTestFramework &sendQuery(
         const shared_model::proto::Query &qry,
-        std::function<void(shared_model::proto::QueryResponse &)> validation);
+        std::function<void(const shared_model::proto::QueryResponse &)>
+            validation);
 
     /**
      * Send query to Iroha without response validation
@@ -148,7 +152,7 @@ namespace integration_framework {
      * @return this
      */
     IntegrationTestFramework &checkProposal(
-        std::function<void(ProposalType &)> validation);
+        std::function<void(const ProposalType &)> validation);
 
     /**
      * Request next proposal from queue and skip it
@@ -163,7 +167,7 @@ namespace integration_framework {
      * @return this
      */
     IntegrationTestFramework &checkBlock(
-        std::function<void(BlockType &)> validation);
+        std::function<void(const BlockType &)> validation);
 
     /**
      * Request next block from queue and skip it

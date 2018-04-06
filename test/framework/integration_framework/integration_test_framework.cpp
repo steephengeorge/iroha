@@ -19,13 +19,20 @@
 
 #include <memory>
 
+#include "backend/protobuf/block.hpp"
+#include "backend/protobuf/queries/proto_query.hpp"
+#include "backend/protobuf/query_responses/proto_query_response.hpp"
+#include "backend/protobuf/transaction.hpp"
+#include "backend/protobuf/transaction_responses/proto_tx_response.hpp"
 #include "builders/protobuf/block.hpp"
 #include "builders/protobuf/proposal.hpp"
 #include "builders/protobuf/transaction.hpp"
 #include "common/files.hpp"
-#include "cryptography/hash_providers/sha3_256.hpp"
+#include "cryptography/crypto_provider/crypto_defaults.hpp"
 #include "datetime/time.hpp"
-// TODO (@l4l) IR-874 create more comfort way for permssion-dependent proto
+#include "framework/integration_framework/iroha_instance.hpp"
+#include "framework/integration_framework/test_irohad.hpp"
+// TODO (@l4l) IR-874 create more comfort way for permission-dependent proto
 // building
 #include "validators/permissions.hpp"
 
@@ -47,7 +54,9 @@ namespace integration_framework {
       : maximum_proposal_size_(maximum_proposal_size), deleter_(deleter) {}
 
   IntegrationTestFramework::~IntegrationTestFramework() {
-    deleter_(*this);
+    if (deleter_) {
+      deleter_(*this);
+    }
     // the code below should be executed anyway in order to prevent app hang
     if (iroha_instance_ and iroha_instance_->instance_) {
       iroha_instance_->instance_->terminate();
@@ -146,7 +155,7 @@ namespace integration_framework {
 
   IntegrationTestFramework &IntegrationTestFramework::sendTx(
       const shared_model::proto::Transaction &tx,
-      std::function<void(shared_model::proto::TransactionResponse &)>
+      std::function<void(const shared_model::proto::TransactionResponse &)>
           validation) {
     log_->info("send transaction");
     iroha_instance_->getIrohaInstance()->getCommandService()->Torii(
@@ -167,7 +176,7 @@ namespace integration_framework {
 
   IntegrationTestFramework &IntegrationTestFramework::sendQuery(
       const shared_model::proto::Query &qry,
-      std::function<void(shared_model::proto::QueryResponse &)> validation) {
+      std::function<void(const shared_model::proto::QueryResponse &)> validation) {
     log_->info("send query");
 
     iroha::protocol::QueryResponse response;
@@ -187,7 +196,7 @@ namespace integration_framework {
   }
 
   IntegrationTestFramework &IntegrationTestFramework::checkProposal(
-      std::function<void(ProposalType &)> validation) {
+      std::function<void(const ProposalType &)> validation) {
     log_->info("check proposal");
     // fetch first proposal from proposal queue
     ProposalType proposal;
@@ -203,7 +212,7 @@ namespace integration_framework {
   }
 
   IntegrationTestFramework &IntegrationTestFramework::checkBlock(
-      std::function<void(BlockType &)> validation) {
+      std::function<void(const BlockType &)> validation) {
     // fetch first from block queue
     log_->info("check block");
     BlockType block;
