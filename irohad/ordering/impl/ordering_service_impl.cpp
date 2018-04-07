@@ -42,6 +42,7 @@ namespace iroha {
           is_finished_(false) {
       updateTimer();
       log_ = logger::log("OrderingServiceImpl");
+      log_->warn("constructor called");
 
       // restore state of ordering service from persistent storage
       proposal_height_ = persistent_state_->loadProposalHeight().value();
@@ -87,6 +88,7 @@ namespace iroha {
 //        log_->warn(
 //            "Proposal height cannot be saved. Skipping proposal publish");
       }
+      log_->warn("generateProposal finished");
     }
 
     void OrderingServiceImpl::publishProposal(
@@ -123,7 +125,9 @@ namespace iroha {
       log_->warn("destructor called");
       std::lock_guard<std::mutex> lock(m_);
       is_finished_ = true;
+      log_->warn("destructor after mutex");
       handle_.unsubscribe();
+      log_->warn("destructor ended");
     }
   }  // namespace ordering
 }  // namespace iroha

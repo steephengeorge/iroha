@@ -271,13 +271,16 @@ class OrderingServiceTest : public ::testing::Test {
 
 TEST_F(OrderingServiceTest, GenerateProposalDestructor) {
   spdlog::set_level(spdlog::level::warn);
-  const auto max_proposal = 1;
+  const auto max_proposal = 100000;
   const auto commit_delay = 100;
   EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
       .Times(1)
       .WillOnce(Return(boost::optional<size_t>(1)));
   EXPECT_CALL(*fake_persistent_state, saveProposalHeight(_))
-      .WillRepeatedly(Return(false));
+      .WillRepeatedly(InvokeWithoutArgs([] {
+        std::this_thread::sleep_for(1s);
+        return false;
+      }));
 
   OrderingServiceImpl ordering_service(
       wsv, max_proposal, commit_delay, fake_transport, fake_persistent_state);
@@ -290,4 +293,5 @@ TEST_F(OrderingServiceTest, GenerateProposalDestructor) {
   };
 
   std::thread thread(on_tx);
+  thread.join();
 }
