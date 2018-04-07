@@ -122,7 +122,7 @@ namespace iroha {
        * Proposal counter of expected proposal. Should be number of blocks in
        * the ledger + 1.
        */
-      size_t proposal_height_;
+      std::atomic<size_t> proposal_height_;
 
       /**
        * Mutex for proper quit handling

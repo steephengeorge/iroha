@@ -120,6 +120,7 @@ namespace iroha {
     }
 
     OrderingServiceImpl::~OrderingServiceImpl() {
+      log_->warn("destructor called");
       std::lock_guard<std::mutex> lock(m_);
       is_finished_ = true;
       handle_.unsubscribe();

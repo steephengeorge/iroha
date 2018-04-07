@@ -237,10 +237,10 @@ class OrderingServiceTest : public ::testing::Test {
 //  cv.wait_for(lk, 2s);
 //}
 
-TEST_F(OrderingServiceTest, ConcurrentGenerateProposal) {
+ TEST_F(OrderingServiceTest, ConcurrentGenerateProposal) {
   spdlog::set_level(spdlog::level::warn);
-  const auto max_proposal = 10000;
-  const auto commit_delay = 100000;
+  const auto max_proposal = 1;
+  const auto commit_delay = 100;
   EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
       .Times(1)
       .WillOnce(Return(boost::optional<size_t>(1)));
@@ -252,7 +252,7 @@ TEST_F(OrderingServiceTest, ConcurrentGenerateProposal) {
 
   auto on_tx = [&]() {
     log_->warn("in thread");
-    for (int i = 0; i < 20000; ++i) {
+    for (int i = 0; i < 1000; ++i) {
       ordering_service->onTransaction(getTx());
     }
   };
@@ -267,7 +267,27 @@ TEST_F(OrderingServiceTest, ConcurrentGenerateProposal) {
   for (int i = 0; i < num_threads; ++i) {
     threads.at(i).join();
   }
+}
 
+TEST_F(OrderingServiceTest, GenerateProposalDestructor) {
+  spdlog::set_level(spdlog::level::warn);
+  const auto max_proposal = 1;
+  const auto commit_delay = 100;
+  EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
+      .Times(1)
+      .WillOnce(Return(boost::optional<size_t>(1)));
+  EXPECT_CALL(*fake_persistent_state, saveProposalHeight(_))
+      .WillRepeatedly(Return(false));
 
-  //on_tx();
+  OrderingServiceImpl ordering_service(
+      wsv, max_proposal, commit_delay, fake_transport, fake_persistent_state);
+
+  auto on_tx = [&]() {
+    log_->warn("in thread");
+    for (int i = 0; i < 1000; ++i) {
+      ordering_service.onTransaction(getTx());
+    }
+  };
+
+  std::thread thread(on_tx);
 }
