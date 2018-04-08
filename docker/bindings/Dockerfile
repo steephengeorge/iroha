@@ -59,8 +59,7 @@ RUN useradd -ms /bin/bash iroha-ci -u 1000 -U
 WORKDIR /opt/iroha
 RUN set -e; \
     chmod -R 777 /opt/iroha; \
-    mkdir -p /tmp/ccache -m 777; \
-    ccache --clear
+    mkdir -p /tmp/ccache -m 777
 
 
 USER iroha-ci
