@@ -24,7 +24,7 @@ RUN set -e; \
         # SWIG dependencies
         libpcre3-dev autoconf bison python3-dev python-dev \
         # other
-        wget curl file unzip zip; \
+        ccache wget curl file unzip zip; \
     apt-get -y clean
 
 # install cmake 3.8.2
