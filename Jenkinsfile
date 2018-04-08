@@ -460,7 +460,7 @@ pipeline {
         script {
           def bindings = load ".jenkinsci/bindings.groovy"
           def platform = sh(script: 'uname -m', returnStdout: true).trim()
-          sh "curl -L -o /tmp/${env.GIT_COMMIT}/Dockerfile --create-dirs https://raw.githubusercontent.com/hyperledger/iroha/${env.GIT_COMMIT}/docker/develop/${platform}/Dockerfile"
+          sh "curl -L -o /tmp/${env.GIT_COMMIT}/Dockerfile --create-dirs https://raw.githubusercontent.com/hyperledger/iroha/${env.GIT_COMMIT}/docker/bindings/Dockerfile"
           iC = docker.build("hyperledger/iroha-develop:${GIT_COMMIT}-${BUILD_NUMBER}", "-f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT} --build-arg PARALLELISM=${PARALLELISM}")
           sh "rm -rf /tmp/${env.GIT_COMMIT}"
           iC.inside {
