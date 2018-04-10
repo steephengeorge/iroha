@@ -96,9 +96,17 @@ namespace iroha {
        * @param account_id
        * @return
        */
-      virtual boost::optional<
-          std::shared_ptr<shared_model::interface::Account>>
+      virtual boost::optional<std::shared_ptr<shared_model::interface::Account>>
       getAccount(
+          const shared_model::interface::types::AccountIdType &account_id) = 0;
+
+      /**
+       * Get account with only keys in kv storage by user account_id
+       * @param account_id
+       * @return
+       */
+      virtual boost::optional<std::shared_ptr<shared_model::interface::Account>>
+      getAccountWithKeysOnly(
           const shared_model::interface::types::AccountIdType &account_id) = 0;
 
       /**

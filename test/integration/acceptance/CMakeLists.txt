@@ -86,3 +86,11 @@ target_link_libraries(create_account_test
   shared_model_proto_builders
   shared_model_stateless_validation
   )
+
+addtest(get_account_test get_account.cpp)
+target_link_libraries(get_account_test
+    application
+    integration_framework
+    shared_model_proto_builders
+    shared_model_stateless_validation
+    )

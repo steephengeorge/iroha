@@ -43,6 +43,9 @@ namespace iroha {
       boost::optional<std::shared_ptr<shared_model::interface::Account>>
       getAccount(const shared_model::interface::types::AccountIdType
                      &account_id) override;
+      boost::optional<std::shared_ptr<shared_model::interface::Account>>
+      getAccountWithKeysOnly(const shared_model::interface::types::AccountIdType
+                                 &account_id) override;
       boost::optional<std::string> getAccountDetail(
           const shared_model::interface::types::AccountIdType &account_id)
           override;

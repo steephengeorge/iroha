@@ -26,15 +26,15 @@
 #include "builders/protobuf/common_objects/proto_amount_builder.hpp"
 #include "builders/protobuf/common_objects/proto_asset_builder.hpp"
 #include "framework/test_subscriber.hpp"
-#include "validators/permissions.hpp"
 #include "model/query_execution.hpp"
 #include "module/shared_model/builders/protobuf/test_query_builder.hpp"
+#include "validators/permissions.hpp"
 
+using ::testing::_;
 using ::testing::AllOf;
 using ::testing::AtLeast;
 using ::testing::Return;
 using ::testing::StrictMock;
-using ::testing::_;
 
 using namespace iroha::ametsuchi;
 using namespace iroha::model;
@@ -152,7 +152,8 @@ TEST_F(GetAccountTest, MyAccountValidCase) {
       .WillRepeatedly(Return(admin_roles));
   EXPECT_CALL(*wsv_query, getRolePermissions(admin_role))
       .WillOnce(Return(role_permissions));
-  EXPECT_CALL(*wsv_query, getAccount(admin_id)).WillOnce(Return(creator));
+  EXPECT_CALL(*wsv_query, getAccountWithKeysOnly(admin_id))
+      .WillOnce(Return(creator));
   auto response = validateAndExecute(query);
   auto cast_resp =
       boost::get<w<shared_model::interface::AccountResponse>>(response->get());
@@ -176,7 +177,8 @@ TEST_F(GetAccountTest, AllAccountValidCase) {
       .WillOnce(Return(admin_roles));
   EXPECT_CALL(*wsv_query, getRolePermissions(admin_role))
       .WillOnce(Return(role_permissions));
-  EXPECT_CALL(*wsv_query, getAccount(account_id)).WillOnce(Return(account));
+  EXPECT_CALL(*wsv_query, getAccountWithKeysOnly(account_id))
+      .WillOnce(Return(account));
   EXPECT_CALL(*wsv_query, getAccountRoles(account_id))
       .WillOnce(Return(admin_roles));
   auto response = validateAndExecute(query);
@@ -202,7 +204,8 @@ TEST_F(GetAccountTest, DomainAccountValidCase) {
       .WillOnce(Return(admin_roles));
   EXPECT_CALL(*wsv_query, getRolePermissions(admin_role))
       .WillOnce(Return(role_permissions));
-  EXPECT_CALL(*wsv_query, getAccount(account_id)).WillOnce(Return(account));
+  EXPECT_CALL(*wsv_query, getAccountWithKeysOnly(account_id))
+      .WillOnce(Return(account));
   EXPECT_CALL(*wsv_query, getAccountRoles(account_id))
       .WillOnce(Return(admin_roles));
   auto response = validateAndExecute(query);
@@ -233,7 +236,8 @@ TEST_F(GetAccountTest, GrantAccountValidCase) {
       hasAccountGrantablePermission(admin_id, account_id, can_get_my_account))
       .WillOnce(Return(true));
 
-  EXPECT_CALL(*wsv_query, getAccount(account_id)).WillOnce(Return(account));
+  EXPECT_CALL(*wsv_query, getAccountWithKeysOnly(account_id))
+      .WillOnce(Return(account));
   EXPECT_CALL(*wsv_query, getAccountRoles(account_id))
       .WillOnce(Return(admin_roles));
   auto response = validateAndExecute(query);
@@ -290,7 +294,8 @@ TEST_F(GetAccountTest, NoAccountExist) {
   EXPECT_CALL(*wsv_query, getRolePermissions(admin_role))
       .WillOnce(Return(role_permissions));
 
-  EXPECT_CALL(*wsv_query, getAccount("none")).WillOnce(Return(boost::none));
+  EXPECT_CALL(*wsv_query, getAccountWithKeysOnly("none"))
+      .WillOnce(Return(boost::none));
   EXPECT_CALL(*wsv_query, getAccountRoles("none"))
       .WillOnce(Return(boost::none));
 

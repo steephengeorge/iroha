@@ -239,7 +239,7 @@ QueryProcessingFactory::executeGetRolePermissions(
 QueryProcessingFactory::QueryResponseBuilderDone
 QueryProcessingFactory::executeGetAccount(
     const shared_model::interface::GetAccount &query) {
-  auto acc = _wsvQuery->getAccount(query.accountId());
+  auto acc = _wsvQuery->getAccountWithKeysOnly(query.accountId());
 
   auto roles = _wsvQuery->getAccountRoles(query.accountId());
   if (not acc or not roles) {

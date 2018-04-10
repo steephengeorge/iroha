@@ -17,8 +17,8 @@
 
 #include "ametsuchi/impl/postgres_wsv_command.hpp"
 #include "ametsuchi/impl/postgres_wsv_query.hpp"
-#include "framework/result_fixture.hpp"
 #include "backend/protobuf/from_old_model.hpp"
+#include "framework/result_fixture.hpp"
 #include "model/account.hpp"
 #include "model/asset.hpp"
 #include "model/domain.hpp"
@@ -135,6 +135,9 @@ namespace iroha {
       auto acc = query->getAccount(account.account_id);
       ASSERT_TRUE(acc);
       ASSERT_EQ(account.json_data, acc.value()->jsonData());
+      auto acc_keys = query->getAccountWithKeysOnly(account.account_id);
+      ASSERT_TRUE(acc_keys);
+      ASSERT_EQ(R"({ "id@domain" : ["key"] })", acc_keys.value()->jsonData());
     }
 
     /**
@@ -151,6 +154,10 @@ namespace iroha {
       ASSERT_TRUE(acc);
       ASSERT_EQ(R"({"id@domain": {"id": "val", "key": "value"}})",
                 acc.value()->jsonData());
+      auto acc_keys = query->getAccountWithKeysOnly(account.account_id);
+      ASSERT_TRUE(acc_keys);
+      ASSERT_EQ(R"({ "id@domain" : ["id","key"] })",
+                acc_keys.value()->jsonData());
     }
 
     /**
@@ -167,6 +174,10 @@ namespace iroha {
       ASSERT_TRUE(acc);
       ASSERT_EQ(R"({"admin": {"id": "val"}, "id@domain": {"key": "value"}})",
                 acc.value()->jsonData());
+      auto acc_keys = query->getAccountWithKeysOnly(account.account_id);
+      ASSERT_TRUE(acc_keys);
+      ASSERT_EQ(R"({ "admin" : ["id"], "id@domain" : ["key"] })",
+                acc_keys.value()->jsonData());
     }
 
     /**
@@ -183,6 +194,10 @@ namespace iroha {
       ASSERT_TRUE(acc);
       ASSERT_EQ(R"({"id@domain": {"id": "[val1, val2]", "key": "value"}})",
                 acc.value()->jsonData());
+      auto acc_keys = query->getAccountWithKeysOnly(account.account_id);
+      ASSERT_TRUE(acc_keys);
+      ASSERT_EQ(R"({ "id@domain" : ["id","key"] })",
+                acc_keys.value()->jsonData());
     }
 
     /**
@@ -198,6 +213,9 @@ namespace iroha {
       auto acc = query->getAccount(account.account_id);
       ASSERT_TRUE(acc);
       ASSERT_EQ(R"({"id@domain": {"key": "val2"}})", acc.value()->jsonData());
+      auto acc_keys = query->getAccountWithKeysOnly(account.account_id);
+      ASSERT_TRUE(acc_keys);
+      ASSERT_EQ(R"({ "id@domain" : ["key"] })", acc_keys.value()->jsonData());
     }
 
     /**

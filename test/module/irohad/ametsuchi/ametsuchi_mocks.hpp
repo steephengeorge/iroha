@@ -48,6 +48,10 @@ namespace iroha {
           getAccount,
           boost::optional<std::shared_ptr<shared_model::interface::Account>>(
               const std::string &account_id));
+      MOCK_METHOD1(
+          getAccountWithKeysOnly,
+          boost::optional<std::shared_ptr<shared_model::interface::Account>>(
+              const std::string &account_id));
       MOCK_METHOD1(getSignatories,
                    boost::optional<
                        std::vector<shared_model::interface::types::PubkeyType>>(
