@@ -129,7 +129,6 @@ TEST_F(ClientServerTest, SendTxWhenValid) {
 
   auto shm_tx = shared_model::proto::TransactionBuilder()
                     .creatorAccountId("some@account")
-                    .txCounter(1)
                     .createdTime(iroha::time::now())
                     .setAccountQuorum("some@account", 2)
                     .build()
@@ -167,7 +166,6 @@ TEST_F(ClientServerTest, SendTxWhenStatelessInvalid) {
   // creating stateless invalid tx
   auto shm_tx = TestTransactionBuilder()
                     .creatorAccountId("some@account")
-                    .txCounter(1)
                     .createdTime(iroha::time::now())
                     .setAccountQuorum("some@@account", 2)
                     .build();

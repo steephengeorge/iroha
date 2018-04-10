@@ -479,7 +479,6 @@ TEST_F(ToriiQueriesTest, FindTransactionsWhenValid) {
       std::shared_ptr<shared_model::interface::Transaction> current =
           clone(TestTransactionBuilder()
                     .creatorAccountId(account.account_id)
-                    .txCounter(i)
                     .build());
       result.push_back(current);
     }
@@ -518,9 +517,6 @@ TEST_F(ToriiQueriesTest, FindTransactionsWhenValid) {
                   .payload()
                   .creator_account_id(),
               account.account_id);
-    ASSERT_EQ(
-        response.transactions_response().transactions(i).payload().tx_counter(),
-        i);
   }
   ASSERT_EQ(iroha::hash(model_query.getTransport()).to_string(),
             response.query_hash());

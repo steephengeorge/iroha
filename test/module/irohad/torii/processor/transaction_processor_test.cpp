@@ -103,7 +103,6 @@ TEST_F(TransactionProcessorTest, TransactionProcessorOnProposalTest) {
   std::vector<shared_model::proto::Transaction> txs;
   for (size_t i = 0; i < proposal_size; i++) {
     auto &&tx = shared_model::proto::TransactionBuilder()
-                    .txCounter(i + 1)
                     .createdTime(iroha::time::now())
                     .creatorAccountId("admin@ru")
                     .addAssetQuantity("admin@tu", "coin#coin", "1.0")
@@ -157,7 +156,6 @@ TEST_F(TransactionProcessorTest, TransactionProcessorBlockCreatedTest) {
   std::vector<shared_model::proto::Transaction> txs;
   for (size_t i = 0; i < proposal_size; i++) {
     auto &&tx = shared_model::proto::TransactionBuilder()
-                    .txCounter(i + 1)
                     .createdTime(iroha::time::now())
                     .creatorAccountId("admin@ru")
                     .addAssetQuantity("admin@tu", "coin#coin", "1.0")
@@ -232,7 +230,6 @@ TEST_F(TransactionProcessorTest, TransactionProcessorOnCommitTest) {
   std::vector<shared_model::proto::Transaction> txs;
   for (size_t i = 0; i < proposal_size; i++) {
     auto &&tx = shared_model::proto::TransactionBuilder()
-                    .txCounter(i + 1)
                     .createdTime(iroha::time::now())
                     .creatorAccountId("admin@ru")
                     .addAssetQuantity("admin@tu", "coin#coin", "1.0")
@@ -303,7 +300,6 @@ TEST_F(TransactionProcessorTest, TransactionProcessorInvalidTxsTest) {
   std::vector<shared_model::proto::Transaction> block_txs;
   for (size_t i = 0; i < block_size; i++) {
     auto &&tx = shared_model::proto::TransactionBuilder()
-                    .txCounter(i + 1)
                     .createdTime(iroha::time::now())
                     .creatorAccountId("admin@ru")
                     .addAssetQuantity("admin@tu", "coin#coin", "1.0")
@@ -321,7 +317,6 @@ TEST_F(TransactionProcessorTest, TransactionProcessorInvalidTxsTest) {
                     // in proposal but didn't appear in block
   for (size_t i = block_size; i < proposal_size; i++) {
     auto &&tx = shared_model::proto::TransactionBuilder()
-                    .txCounter(i + 1)
                     .createdTime(iroha::time::now())
                     .creatorAccountId("admin@ru")
                     .addAssetQuantity("admin@tu", "coin#coin", "1.0")
