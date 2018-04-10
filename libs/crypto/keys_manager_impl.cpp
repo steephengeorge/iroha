@@ -21,7 +21,8 @@
 
 #include "common/byteutils.hpp"
 #include "cryptography/crypto_provider/crypto_defaults.hpp"
-#include "cryptography/ed25519_sha3_impl/internal/sha3_hash.hpp"
+
+using namespace shared_model::crypto;
 
 using iroha::operator|;
 
@@ -47,19 +48,17 @@ namespace iroha {
   /**
    * Function for XOR decryption
    */
-  static constexpr auto decrypt = encrypt<shared_model::crypto::Blob::Bytes>;
+  static constexpr auto decrypt = encrypt<Blob::Bytes>;
 
   KeysManagerImpl::KeysManagerImpl(const std::string &account_name)
       : account_name_(std::move(account_name)),
         log_(logger::log("KeysManagerImpl")) {}
 
-  bool KeysManagerImpl::validate(
-      const shared_model::crypto::Keypair &keypair) const {
+  bool KeysManagerImpl::validate(const Keypair &keypair) const {
     try {
-      auto test = shared_model::crypto::Blob(sha3_256("12345").to_string());
-      auto sig =
-          shared_model::crypto::DefaultCryptoAlgorithmType::sign(test, keypair);
-      if (not shared_model::crypto::DefaultCryptoAlgorithmType::verify(
+      auto test = Blob("12345");
+      auto sig = DefaultCryptoAlgorithmType::sign(test, keypair);
+      if (not DefaultCryptoAlgorithmType::verify(
               sig, test, keypair.publicKey())) {
         log_->error("key validation failed");
         return false;
@@ -82,47 +81,40 @@ namespace iroha {
     return true;
   }
 
-  boost::optional<shared_model::crypto::Keypair> KeysManagerImpl::loadKeys() {
+  boost::optional<Keypair> KeysManagerImpl::loadKeys() {
     std::string pub_key;
     std::string priv_key;
 
-    if (not loadFile(account_name_ + public_key_extension, pub_key)
-        or not loadFile(account_name_ + private_key_extension, priv_key))
+    if (not loadFile(account_name_ + kPublicKeyExtension, pub_key)
+        or not loadFile(account_name_ + kPrivateKeyExtension, priv_key))
       return boost::none;
 
-    shared_model::crypto::Keypair keypair = shared_model::crypto::Keypair(
-        shared_model::crypto::PublicKey(
-            shared_model::crypto::Blob::fromHexString(pub_key)),
-        shared_model::crypto::PrivateKey(
-            shared_model::crypto::Blob::fromHexString(priv_key)));
+    Keypair keypair = Keypair(PublicKey(Blob::fromHexString(pub_key)),
+                              PrivateKey(Blob::fromHexString(priv_key)));
 
     return this->validate(keypair) ? boost::make_optional(keypair)
                                    : boost::none;
   }
 
-  boost::optional<shared_model::crypto::Keypair> KeysManagerImpl::loadKeys(
+  boost::optional<Keypair> KeysManagerImpl::loadKeys(
       const std::string &pass_phrase) {
     std::string pub_key;
     std::string priv_key;
 
-    if (not loadFile(account_name_ + public_key_extension, pub_key)
-        or not loadFile(account_name_ + private_key_extension, priv_key))
+    if (not loadFile(account_name_ + kPublicKeyExtension, pub_key)
+        or not loadFile(account_name_ + kPrivateKeyExtension, priv_key))
       return boost::none;
 
-    shared_model::crypto::Keypair keypair = shared_model::crypto::Keypair(
-        shared_model::crypto::PublicKey(
-            shared_model::crypto::Blob::fromHexString(pub_key)),
-        shared_model::crypto::PrivateKey(
-            decrypt(shared_model::crypto::Blob::fromHexString(priv_key).blob(),
-                    pass_phrase)));
+    Keypair keypair = Keypair(
+        PublicKey(Blob::fromHexString(pub_key)),
+        PrivateKey(decrypt(Blob::fromHexString(priv_key).blob(), pass_phrase)));
 
     return this->validate(keypair) ? boost::make_optional(keypair)
                                    : boost::none;
   }
 
   bool KeysManagerImpl::createKeys() {
-    shared_model::crypto::Keypair keypair =
-        shared_model::crypto::DefaultCryptoAlgorithmType::generateKeypair();
+    Keypair keypair = DefaultCryptoAlgorithmType::generateKeypair();
 
     auto pub = keypair.publicKey().hex();
     auto priv = keypair.privateKey().hex();
@@ -130,8 +122,7 @@ namespace iroha {
   }
 
   bool KeysManagerImpl::createKeys(const std::string &pass_phrase) {
-    shared_model::crypto::Keypair keypair =
-        shared_model::crypto::DefaultCryptoAlgorithmType::generateKeypair();
+    Keypair keypair = DefaultCryptoAlgorithmType::generateKeypair();
 
     auto pub = keypair.publicKey().hex();
     auto priv = bytestringToHexstring(
@@ -140,8 +131,8 @@ namespace iroha {
   }
 
   bool KeysManagerImpl::store(const std::string &pub, const std::string &priv) {
-    std::ofstream pub_file(account_name_ + public_key_extension);
-    std::ofstream priv_file(account_name_ + private_key_extension);
+    std::ofstream pub_file(account_name_ + kPublicKeyExtension);
+    std::ofstream priv_file(account_name_ + kPrivateKeyExtension);
     if (not pub_file or not priv_file) {
       return false;
     }
@@ -151,6 +142,6 @@ namespace iroha {
     return pub_file.good() && priv_file.good();
   }
 
-  const std::string KeysManagerImpl::public_key_extension = ".pub";
-  const std::string KeysManagerImpl::private_key_extension = ".priv";
+  const std::string KeysManagerImpl::kPublicKeyExtension = ".pub";
+  const std::string KeysManagerImpl::kPrivateKeyExtension = ".priv";
 }  // namespace iroha

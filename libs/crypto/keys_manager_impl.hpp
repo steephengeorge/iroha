@@ -37,8 +37,8 @@ namespace iroha {
     boost::optional<shared_model::crypto::Keypair> loadKeys(
         const std::string &pass_phrase) override;
 
-    static const std::string public_key_extension;
-    static const std::string private_key_extension;
+    static const std::string kPublicKeyExtension;
+    static const std::string kPrivateKeyExtension;
 
    private:
     /**

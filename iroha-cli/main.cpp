@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
     if (not keypair) {
       logger->error(
           "Cannot load specified keypair, or keypair is invalid. Path: {}, "
-          "keypair name: {}. Use --key_path to path to your keypair. \n"
+          "keypair name: {}. Use --key_path with path of your keypair. \n"
           "Maybe wrong pass phrase (\"{}\")?",
           path.string(),
           FLAGS_account_name,
