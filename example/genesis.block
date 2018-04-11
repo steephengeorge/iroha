@@ -10,7 +10,6 @@
             "signatures": [],
             "created_ts": 0,
             "creator_account_id": "",
-            "tx_counter": 0,
             "commands": [
                 {
                     "command_type": "AddPeer",
