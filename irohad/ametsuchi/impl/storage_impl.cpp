@@ -52,7 +52,7 @@ namespace iroha {
 
     StorageImpl::StorageImpl(
         std::string block_store_dir,
-        std::string postgres_options,
+        PostgresOptions postgres_options,
         std::unique_ptr<FlatFile> block_store,
         std::unique_ptr<pqxx::lazyconnection> wsv_connection,
         std::unique_ptr<pqxx::nontransaction> wsv_transaction)
@@ -73,8 +73,8 @@ namespace iroha {
 
     expected::Result<std::unique_ptr<TemporaryWsv>, std::string>
     StorageImpl::createTemporaryWsv() {
-      auto postgres_connection =
-          std::make_unique<pqxx::lazyconnection>(postgres_options_);
+      auto postgres_connection = std::make_unique<pqxx::lazyconnection>(
+          postgres_options_.optionsString());
       try {
         postgres_connection->activate();
       } catch (const pqxx::broken_connection &e) {
@@ -91,8 +91,8 @@ namespace iroha {
 
     expected::Result<std::unique_ptr<MutableStorage>, std::string>
     StorageImpl::createMutableStorage() {
-      auto postgres_connection =
-          std::make_unique<pqxx::lazyconnection>(postgres_options_);
+      auto postgres_connection = std::make_unique<pqxx::lazyconnection>(
+          postgres_options_.optionsString());
       try {
         postgres_connection->activate();
       } catch (const pqxx::broken_connection &e) {
@@ -166,7 +166,14 @@ namespace iroha {
 
     void StorageImpl::dropStorage() {
       log_->info("Drop ledger");
-      auto drop = R"(
+      auto dbname = postgres_options_.getOption("dbname");
+      if (dbname) {
+        pqxx::connection connection(
+            postgres_options_.optionsStringWithoutDbName());
+        pqxx::nontransaction ntxn(connection);
+        ntxn.exec("DROP DATABASE IF EXISTS " + dbname.value());
+      } else {
+        auto drop = R"(
 DROP TABLE IF EXISTS account_has_signatory;
 DROP TABLE IF EXISTS account_has_asset;
 DROP TABLE IF EXISTS role_has_permissions;
@@ -184,20 +191,35 @@ DROP TABLE IF EXISTS index_by_creator_height;
 DROP TABLE IF EXISTS index_by_id_height_asset;
 )";
 
-      // erase db
-      log_->info("drop dp");
-      pqxx::connection connection(postgres_options_);
-      pqxx::work txn(connection);
-      txn.exec(drop);
-      txn.commit();
+        // erase db
+        log_->info("drop dp");
+        pqxx::connection connection(postgres_options_.optionsString());
+        pqxx::work txn(connection);
+        txn.exec(drop);
+        txn.commit();
 
-      pqxx::work init_txn(connection);
-      init_txn.exec(init_);
-      init_txn.commit();
-
+        pqxx::work init_txn(connection);
+        init_txn.exec(init_);
+        init_txn.commit();
+      }
       // erase blocks
       log_->info("drop block store");
       block_store_->dropAll();
+    }
+
+    void StorageImpl::createDatabaseIfNotExist(
+        const std::string &dbname,
+        const std::string &options_str_without_dbname) {
+      auto temp_connection =
+          std::make_unique<pqxx::lazyconnection>(options_str_without_dbname);
+      auto transaction =
+          std::make_unique<pqxx::nontransaction>(*temp_connection);
+      auto result = transaction->exec(
+          "SELECT datname FROM pg_catalog.pg_database WHERE datname = "
+          + transaction->quote(dbname));
+      if (result.size() == 0) {
+        transaction->exec("CREATE DATABASE " + dbname);
+      }
     }
 
     expected::Result<ConnectionContext, std::string>
@@ -237,19 +259,31 @@ DROP TABLE IF EXISTS index_by_id_height_asset;
     expected::Result<std::shared_ptr<StorageImpl>, std::string>
     StorageImpl::create(std::string block_store_dir,
                         std::string postgres_options) {
-      auto ctx_result = initConnections(block_store_dir, postgres_options);
-      expected::Result<std::shared_ptr<StorageImpl>, std::string> storage;
-      ctx_result.match(
-          [&](expected::Value<ConnectionContext> &ctx) {
-            storage = expected::makeValue(std::shared_ptr<StorageImpl>(
-                new StorageImpl(block_store_dir,
-                                postgres_options,
-                                std::move(ctx.value.block_store),
-                                std::move(ctx.value.pg_lazy),
-                                std::move(ctx.value.pg_nontx))));
-          },
-          [&](expected::Error<std::string> &error) { storage = error; });
-      return storage;
+      return PostgresOptions::create(postgres_options) |
+                 [&block_store_dir](const PostgresOptions &options)
+                 -> expected::Result<std::shared_ptr<StorageImpl>,
+                                     std::string> {
+        auto dbname = options.getOption("dbname");
+        if (dbname) {
+          createDatabaseIfNotExist(dbname.value(),
+                                   options.optionsStringWithoutDbName());
+        }
+
+        auto ctx_result =
+            initConnections(block_store_dir, options.optionsString());
+        expected::Result<std::shared_ptr<StorageImpl>, std::string> storage;
+        ctx_result.match(
+            [&](expected::Value<ConnectionContext> &ctx) {
+              storage = expected::makeValue(std::shared_ptr<StorageImpl>(
+                  new StorageImpl(block_store_dir,
+                                  options,
+                                  std::move(ctx.value.block_store),
+                                  std::move(ctx.value.pg_lazy),
+                                  std::move(ctx.value.pg_nontx))));
+            },
+            [&](expected::Error<std::string> &error) { storage = error; });
+        return storage;
+      };
     }
 
     void StorageImpl::commit(std::unique_ptr<MutableStorage> mutableStorage) {
@@ -272,7 +306,7 @@ DROP TABLE IF EXISTS index_by_id_height_asset;
 
     std::shared_ptr<WsvQuery> StorageImpl::getWsvQuery() const {
       auto postgres_connection =
-          std::make_unique<pqxx::lazyconnection>(postgres_options_);
+          std::make_unique<pqxx::lazyconnection>(postgres_options_.optionsString());
       try {
         postgres_connection->activate();
       } catch (const pqxx::broken_connection &e) {
