@@ -42,7 +42,6 @@ namespace iroha {
           is_finished_(false) {
       updateTimer();
       log_ = logger::log("OrderingServiceImpl");
-      log_->warn("constructor called");
 
       // restore state of ordering service from persistent storage
       proposal_height_ = persistent_state_->loadProposalHeight().value();
@@ -60,13 +59,11 @@ namespace iroha {
     }
 
     void OrderingServiceImpl::generateProposal() {
-      log_->warn("generateProposal called");
       // TODO 05/03/2018 andrei IR-1046 Server-side shared model object
       // factories with move semantics
       iroha::protocol::Proposal proto_proposal;
       proto_proposal.set_height(proposal_height_++);
       proto_proposal.set_created_time(iroha::time::now());
-      log_->info("Start proposal generation");
       for (std::shared_ptr<shared_model::interface::Transaction> tx;
            static_cast<size_t>(proto_proposal.transactions_size()) < max_size_
            and queue_.try_pop(tx);) {
@@ -85,10 +82,9 @@ namespace iroha {
       } else {
         // TODO(@l4l) 23/03/18: publish proposal independent of psql status
         // IR-1162
-//        log_->warn(
-//            "Proposal height cannot be saved. Skipping proposal publish");
+        log_->warn(
+            "Proposal height cannot be saved. Skipping proposal publish");
       }
-      log_->warn("generateProposal finished");
     }
 
     void OrderingServiceImpl::publishProposal(
@@ -122,12 +118,9 @@ namespace iroha {
     }
 
     OrderingServiceImpl::~OrderingServiceImpl() {
-      log_->warn("destructor called");
       std::lock_guard<std::mutex> lock(m_);
       is_finished_ = true;
-      log_->warn("destructor after mutex");
       handle_.unsubscribe();
-      log_->warn("destructor ended");
     }
   }  // namespace ordering
 }  // namespace iroha

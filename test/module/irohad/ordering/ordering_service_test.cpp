@@ -103,142 +103,141 @@ class OrderingServiceTest : public ::testing::Test {
   std::shared_ptr<MockPeerQuery> wsv;
 };
 
-// TEST_F(OrderingServiceTest, SimpleTest) {
-//  // Direct publishProposal call, used for basic case test and for debug
-//  // simplicity
-//
-//  const size_t max_proposal = 5;
-//  const size_t commit_delay = 1000;
-//
-//  EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
-//      .Times(1)
-//      .WillOnce(Return(boost::optional<size_t>(2)));
-//
-//  auto ordering_service = std::make_shared<OrderingServiceImpl>(
-//      wsv, max_proposal, commit_delay, fake_transport, fake_persistent_state);
-//  fake_transport->subscribe(ordering_service);
-//
-//  EXPECT_CALL(*fake_transport, publishProposalProxy(_, _)).Times(1);
-//
-//  fake_transport->publishProposal(
-//      std::make_unique<shared_model::proto::Proposal>(
-//          TestProposalBuilder()
-//              .height(1)
-//              .createdTime(iroha::time::now())
-//              .build()),
-//      {});
-//}
-//
-// TEST_F(OrderingServiceTest, ValidWhenProposalSizeStrategy) {
-//  const size_t max_proposal = 5;
-//  const size_t commit_delay = 1000;
-//
-//  EXPECT_CALL(*fake_persistent_state, saveProposalHeight(_))
-//      .Times(2)
-//      .WillRepeatedly(Return(true));
-//  EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
-//      .Times(1)
-//      .WillOnce(Return(boost::optional<size_t>(2)));
-//
-//  auto ordering_service = std::make_shared<OrderingServiceImpl>(
-//      wsv, max_proposal, commit_delay, fake_transport, fake_persistent_state);
-//  fake_transport->subscribe(ordering_service);
-//
-//  // Init => proposal size 5 => 2 proposals after 10 transactions
-//  size_t call_count = 0;
-//  EXPECT_CALL(*fake_transport, publishProposalProxy(_, _))
-//      .Times(2)
-//      .WillRepeatedly(InvokeWithoutArgs([&] {
-//        ++call_count;
-//        cv.notify_one();
-//      }));
-//
-//  shared_model::proto::PeerBuilder builder;
-//
-//  auto key = shared_model::crypto::PublicKey(peer->pubkey().toString());
-//  auto tmp = builder.address(peer->address()).pubkey(key).build();
-//
-//  EXPECT_CALL(*wsv, getLedgerPeers())
-//      .WillRepeatedly(Return(std::vector<decltype(peer)>{peer}));
-//
-//  for (size_t i = 0; i < 10; ++i) {
-//    ordering_service->onTransaction(getTx());
-//  }
-//
-//  std::unique_lock<std::mutex> lock(m);
-//  cv.wait_for(lock, 10s, [&] { return call_count == 2; });
-//}
-//
-// TEST_F(OrderingServiceTest, ValidWhenTimerStrategy) {
-//  // Init => proposal timer 400 ms => 10 tx by 50 ms => 2 proposals in 1
-//  second
-//
-//  EXPECT_CALL(*fake_persistent_state, saveProposalHeight(_))
-//      .Times(2)
-//      .WillRepeatedly(Return(true));
-//  shared_model::proto::PeerBuilder builder;
-//
-//  auto key = shared_model::crypto::PublicKey(peer->pubkey().toString());
-//  auto tmp = builder.address(peer->address()).pubkey(key).build();
-//
-//  EXPECT_CALL(*wsv, getLedgerPeers())
-//      .WillRepeatedly(Return(std::vector<decltype(peer)>{peer}));
-//
-//  const size_t max_proposal = 100;
-//  const size_t commit_delay = 400;
-//
-//  EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
-//      .Times(1)
-//      .WillOnce(Return(boost::optional<size_t>(2)));
-//
-//  auto ordering_service = std::make_shared<OrderingServiceImpl>(
-//      wsv, max_proposal, commit_delay, fake_transport, fake_persistent_state);
-//  fake_transport->subscribe(ordering_service);
-//
-//  EXPECT_CALL(*fake_transport, publishProposalProxy(_, _))
-//      .Times(2)
-//      .WillRepeatedly(InvokeWithoutArgs([&] {
-//        log_->info("Proposal send to grpc");
-//        cv.notify_one();
-//      }));
-//
-//  for (size_t i = 0; i < 8; ++i) {
-//    ordering_service->onTransaction(getTx());
-//  }
-//
-//  std::unique_lock<std::mutex> lk(m);
-//  cv.wait_for(lk, 10s);
-//
-//  ordering_service->onTransaction(getTx());
-//  ordering_service->onTransaction(getTx());
-//  cv.wait_for(lk, 10s);
-//}
-//
-///**
-// * @given Ordering service and the persistent state that cannot save proposals
-// * @when onTransaction is called
-// * @then no published proposal
-// */
-// TEST_F(OrderingServiceTest, BrokenPersistentState) {
-//  const size_t max_proposal = 1;
-//  const size_t commit_delay = 100;
-//  EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
-//      .Times(1)
-//      .WillOnce(Return(boost::optional<size_t>(1)));
-//  EXPECT_CALL(*fake_persistent_state, saveProposalHeight(2))
-//      .Times(1)
-//      .WillRepeatedly(Return(false));
-//
-//  auto ordering_service = std::make_shared<OrderingServiceImpl>(
-//      wsv, max_proposal, commit_delay, fake_transport, fake_persistent_state);
-//  ordering_service->onTransaction(getTx());
-//
-//  std::unique_lock<std::mutex> lk(m);
-//  cv.wait_for(lk, 2s);
-//}
+ TEST_F(OrderingServiceTest, SimpleTest) {
+  // Direct publishProposal call, used for basic case test and for debug
+  // simplicity
+
+  const size_t max_proposal = 5;
+  const size_t commit_delay = 1000;
+
+  EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
+      .Times(1)
+      .WillOnce(Return(boost::optional<size_t>(2)));
+
+  auto ordering_service = std::make_shared<OrderingServiceImpl>(
+      wsv, max_proposal, commit_delay, fake_transport, fake_persistent_state);
+  fake_transport->subscribe(ordering_service);
+
+  EXPECT_CALL(*fake_transport, publishProposalProxy(_, _)).Times(1);
+
+  fake_transport->publishProposal(
+      std::make_unique<shared_model::proto::Proposal>(
+          TestProposalBuilder()
+              .height(1)
+              .createdTime(iroha::time::now())
+              .build()),
+      {});
+}
+
+ TEST_F(OrderingServiceTest, ValidWhenProposalSizeStrategy) {
+  const size_t max_proposal = 5;
+  const size_t commit_delay = 1000;
+
+  EXPECT_CALL(*fake_persistent_state, saveProposalHeight(_))
+      .Times(2)
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
+      .Times(1)
+      .WillOnce(Return(boost::optional<size_t>(2)));
+
+  auto ordering_service = std::make_shared<OrderingServiceImpl>(
+      wsv, max_proposal, commit_delay, fake_transport, fake_persistent_state);
+  fake_transport->subscribe(ordering_service);
+
+  // Init => proposal size 5 => 2 proposals after 10 transactions
+  size_t call_count = 0;
+  EXPECT_CALL(*fake_transport, publishProposalProxy(_, _))
+      .Times(2)
+      .WillRepeatedly(InvokeWithoutArgs([&] {
+        ++call_count;
+        cv.notify_one();
+      }));
+
+  shared_model::proto::PeerBuilder builder;
+
+  auto key = shared_model::crypto::PublicKey(peer->pubkey().toString());
+  auto tmp = builder.address(peer->address()).pubkey(key).build();
+
+  EXPECT_CALL(*wsv, getLedgerPeers())
+      .WillRepeatedly(Return(std::vector<decltype(peer)>{peer}));
+
+  for (size_t i = 0; i < 10; ++i) {
+    ordering_service->onTransaction(getTx());
+  }
+
+  std::unique_lock<std::mutex> lock(m);
+  cv.wait_for(lock, 10s, [&] { return call_count == 2; });
+}
+
+ TEST_F(OrderingServiceTest, ValidWhenTimerStrategy) {
+  // Init => proposal timer 400 ms => 10 tx by 50 ms => 2 proposals in 1
+  second
+
+  EXPECT_CALL(*fake_persistent_state, saveProposalHeight(_))
+      .Times(2)
+      .WillRepeatedly(Return(true));
+  shared_model::proto::PeerBuilder builder;
+
+  auto key = shared_model::crypto::PublicKey(peer->pubkey().toString());
+  auto tmp = builder.address(peer->address()).pubkey(key).build();
+
+  EXPECT_CALL(*wsv, getLedgerPeers())
+      .WillRepeatedly(Return(std::vector<decltype(peer)>{peer}));
+
+  const size_t max_proposal = 100;
+  const size_t commit_delay = 400;
+
+  EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
+      .Times(1)
+      .WillOnce(Return(boost::optional<size_t>(2)));
+
+  auto ordering_service = std::make_shared<OrderingServiceImpl>(
+      wsv, max_proposal, commit_delay, fake_transport, fake_persistent_state);
+  fake_transport->subscribe(ordering_service);
+
+  EXPECT_CALL(*fake_transport, publishProposalProxy(_, _))
+      .Times(2)
+      .WillRepeatedly(InvokeWithoutArgs([&] {
+        log_->info("Proposal send to grpc");
+        cv.notify_one();
+      }));
+
+  for (size_t i = 0; i < 8; ++i) {
+    ordering_service->onTransaction(getTx());
+  }
+
+  std::unique_lock<std::mutex> lk(m);
+  cv.wait_for(lk, 10s);
+
+  ordering_service->onTransaction(getTx());
+  ordering_service->onTransaction(getTx());
+  cv.wait_for(lk, 10s);
+}
+
+/**
+ * @given Ordering service and the persistent state that cannot save proposals
+ * @when onTransaction is called
+ * @then no published proposal
+ */
+ TEST_F(OrderingServiceTest, BrokenPersistentState) {
+  const size_t max_proposal = 1;
+  const size_t commit_delay = 100;
+  EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
+      .Times(1)
+      .WillOnce(Return(boost::optional<size_t>(1)));
+  EXPECT_CALL(*fake_persistent_state, saveProposalHeight(2))
+      .Times(1)
+      .WillRepeatedly(Return(false));
+
+  auto ordering_service = std::make_shared<OrderingServiceImpl>(
+      wsv, max_proposal, commit_delay, fake_transport, fake_persistent_state);
+  ordering_service->onTransaction(getTx());
+
+  std::unique_lock<std::mutex> lk(m);
+  cv.wait_for(lk, 2s);
+}
 
  TEST_F(OrderingServiceTest, ConcurrentGenerateProposal) {
-  spdlog::set_level(spdlog::level::warn);
   const auto max_proposal = 1;
   const auto commit_delay = 100;
   EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
@@ -251,7 +250,6 @@ class OrderingServiceTest : public ::testing::Test {
       wsv, max_proposal, commit_delay, fake_transport, fake_persistent_state);
 
   auto on_tx = [&]() {
-    log_->warn("in thread");
     for (int i = 0; i < 1000; ++i) {
       ordering_service->onTransaction(getTx());
     }
@@ -270,7 +268,6 @@ class OrderingServiceTest : public ::testing::Test {
 }
 
 TEST_F(OrderingServiceTest, GenerateProposalDestructor) {
-  spdlog::set_level(spdlog::level::warn);
   const auto max_proposal = 100000;
   const auto commit_delay = 100;
   EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
@@ -286,7 +283,6 @@ TEST_F(OrderingServiceTest, GenerateProposalDestructor) {
       wsv, max_proposal, commit_delay, fake_transport, fake_persistent_state);
 
   auto on_tx = [&]() {
-    log_->warn("in thread");
     for (int i = 0; i < 1000; ++i) {
       ordering_service.onTransaction(getTx());
     }
