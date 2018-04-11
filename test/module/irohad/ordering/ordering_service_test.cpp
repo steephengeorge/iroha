@@ -103,7 +103,7 @@ class OrderingServiceTest : public ::testing::Test {
   std::shared_ptr<MockPeerQuery> wsv;
 };
 
- TEST_F(OrderingServiceTest, SimpleTest) {
+TEST_F(OrderingServiceTest, SimpleTest) {
   // Direct publishProposal call, used for basic case test and for debug
   // simplicity
 
@@ -129,7 +129,7 @@ class OrderingServiceTest : public ::testing::Test {
       {});
 }
 
- TEST_F(OrderingServiceTest, ValidWhenProposalSizeStrategy) {
+TEST_F(OrderingServiceTest, ValidWhenProposalSizeStrategy) {
   const size_t max_proposal = 5;
   const size_t commit_delay = 1000;
 
@@ -169,10 +169,8 @@ class OrderingServiceTest : public ::testing::Test {
   cv.wait_for(lock, 10s, [&] { return call_count == 2; });
 }
 
- TEST_F(OrderingServiceTest, ValidWhenTimerStrategy) {
-  // Init => proposal timer 400 ms => 10 tx by 50 ms => 2 proposals in 1
-  second
-
+TEST_F(OrderingServiceTest, ValidWhenTimerStrategy) {
+  // Init => proposal timer 400 ms => 10 tx by 50 ms => 2 proposals in 1 second
   EXPECT_CALL(*fake_persistent_state, saveProposalHeight(_))
       .Times(2)
       .WillRepeatedly(Return(true));
@@ -219,7 +217,7 @@ class OrderingServiceTest : public ::testing::Test {
  * @when onTransaction is called
  * @then no published proposal
  */
- TEST_F(OrderingServiceTest, BrokenPersistentState) {
+TEST_F(OrderingServiceTest, BrokenPersistentState) {
   const size_t max_proposal = 1;
   const size_t commit_delay = 100;
   EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
@@ -237,7 +235,12 @@ class OrderingServiceTest : public ::testing::Test {
   cv.wait_for(lk, 2s);
 }
 
- TEST_F(OrderingServiceTest, ConcurrentGenerateProposal) {
+/**
+ * @given Ordering service up and running
+ * @when Send 1000 transactions from each of 2 threads
+ * @then Ordering service should not crash
+ */
+TEST_F(OrderingServiceTest, DISABLED_ConcurrentGenerateProposal) {
   const auto max_proposal = 1;
   const auto commit_delay = 100;
   EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
@@ -267,6 +270,13 @@ class OrderingServiceTest : public ::testing::Test {
   }
 }
 
+/**
+ * @given Ordering service up and running
+ * @when Send 1000 transactions from a separate thread and perform 1 second
+ * delay during generateProposal() so destructor of OrderingServiceImpl is
+ * called before generateProposal() finished
+ * @then Ordering service should not crash
+ */
 TEST_F(OrderingServiceTest, GenerateProposalDestructor) {
   const auto max_proposal = 100000;
   const auto commit_delay = 100;
