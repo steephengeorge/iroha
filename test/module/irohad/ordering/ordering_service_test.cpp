@@ -277,7 +277,7 @@ TEST_F(OrderingServiceTest, DISABLED_ConcurrentGenerateProposal) {
  * called before generateProposal() finished
  * @then Ordering service should not crash
  */
-TEST_F(OrderingServiceTest, GenerateProposalDestructor) {
+TEST_F(OrderingServiceTest, DISABLED_GenerateProposalDestructor) {
   const auto max_proposal = 100000;
   const auto commit_delay = 100;
   EXPECT_CALL(*fake_persistent_state, loadProposalHeight())
