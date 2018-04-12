@@ -313,17 +313,21 @@ QueryProcessingFactory::executeGetAccountTransactions(
 
 QueryProcessingFactory::QueryResponseBuilderDone
 iroha::model::QueryProcessingFactory::executeGetTransactions(
-    const shared_model::interface::GetTransactions &query) {
+    const shared_model::interface::Query &query,
+    const shared_model::interface::GetTransactions &q) {
   const std::vector<shared_model::crypto::Hash> &hashes =
-      query.transactionHashes();
+      q.transactionHashes();
 
   auto transactions = _blockQuery->getTransactions(hashes);
 
   std::vector<shared_model::proto::Transaction> txs;
+  bool can_get_all = checkAccountRolePermission(
+      query.creatorAccountId(), *_wsvQuery, can_get_all_txs);
   transactions.subscribe([&](const auto &tx) {
     if (tx) {
-      txs.push_back(
-          *std::static_pointer_cast<shared_model::proto::Transaction>(*tx));
+      auto proto_tx = *std::static_pointer_cast<shared_model::proto::Transaction>(*tx);
+      if (can_get_all or proto_tx.creatorAccountId() == query.creatorAccountId()  )
+        txs.push_back(proto_tx);
     }
   });
 
@@ -377,7 +381,7 @@ QueryProcessingFactory::execute(const shared_model::interface::Query &query) {
         if (not validate(query, *q)) {
           builder = statefulFailed();
         } else {
-          builder = executeGetTransactions(*q);
+          builder = executeGetTransactions(query, *q);
         }
         return clone(builder.queryHash(query_hash).build());
       },

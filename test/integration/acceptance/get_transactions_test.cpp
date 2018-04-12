@@ -221,7 +221,7 @@ TEST_F(GetTransactions, InexistentHash) {
  * @then TransactionsResponse with no transactions
  * TODO(@l4l) 02/01/18 Should be enabled after resolving IR-1039
  */
-TEST_F(GetTransactions, DISABLED_OtherUserTx) {
+TEST_F(GetTransactions, OtherUserTx) {
   auto check = [](auto &status) {
     auto resp = boost::apply_visitor(
         interface::SpecifiedVisitor<interface::TransactionsResponse>(),
