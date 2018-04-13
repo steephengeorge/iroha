@@ -219,7 +219,6 @@ TEST_F(GetTransactions, InexistentHash) {
  * @given some user with can_get_my_txs
  * @when query GetTransactions of existing transaction of the other user
  * @then TransactionsResponse with no transactions
- * TODO(@l4l) 02/01/18 Should be enabled after resolving IR-1039
  */
 TEST_F(GetTransactions, OtherUserTx) {
   auto check = [](auto &status) {
